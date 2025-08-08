@@ -1,4 +1,4 @@
-name: Deploy Next.js App
+name: Deploy next app
 
 on:
   push:
@@ -25,10 +25,14 @@ jobs:
         with:
           node-version: 18.18.0
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+      - name: Clean install dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install --force
 
-      - name: Build Next.js app
+
+
+      - name: Build Next app
         run: npm run build
 
       - name: Set up SSH key
@@ -41,20 +45,18 @@ jobs:
           ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << EOF
             sudo rm -rf /var/www/website/*
             mkdir -p /var/www/website
+            exit
           EOF
 
-      - name: Upload build to server
+      - name: Upload files to server
         run: |
-          scp -P $SSH_PORT -r .next public package.json next.config.* $SSH_USERNAME@$SSH_HOST:/var/www/website/
-          
-      - name: Install dependencies and restart server
+          scp -P $SSH_PORT -r .next public package.json next.config.mjs $SSH_USERNAME@$SSH_HOST:/var/www/website/
+
+      - name: Restart app on server
         run: |
           ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << 'EOF'
             cd /var/www/website
-            npm install --omit=dev
-
-            # Optional: export env variables or load .env.production
-            # export NODE_ENV=production
-
-            pm2 restart knot-web || pm2 start "npx next start -p 4000" --name knot-web
+            npm install --production
+            pm2 restart knot-web || pm2 start 'npx next start -p 4000' --name knot-web
+            exit
           EOF

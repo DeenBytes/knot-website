@@ -80,7 +80,7 @@ export default function NewsletterSection() {
           </form>
 
           <p className="text-muted mt-4 text-sm">
-            By subscribing, you agree to our Privacy Policy and consent to receive updates from Knot Delhi.
+            By subscribing, you agree to our Privacy Policy and consent to receive updates from Knot Delhi.123
           </p>
         </div>
       </div>
