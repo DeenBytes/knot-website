@@ -14,7 +14,7 @@ jobs:
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-      NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+      ENV_FILE: ${{ vars.ENV_FILE }}
 
     steps:
       - name: Checkout code
@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build project
+      - name: Build Next.js app
         run: npm run build
 
       - name: Set up SSH key
@@ -36,20 +36,25 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to server (copy build artifacts only)
+      - name: Clean remote folder
         run: |
           ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << EOF
-            sudo rm -rf /var/www/website
+            sudo rm -rf /var/www/website/*
             mkdir -p /var/www/website
           EOF
 
+      - name: Upload build to server
+        run: |
           scp -P $SSH_PORT -r .next public package.json next.config.* $SSH_USERNAME@$SSH_HOST:/var/www/website/
-
-      - name: Install & Start on Server
+          
+      - name: Install dependencies and restart server
         run: |
           ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << 'EOF'
             cd /var/www/website
             npm install --omit=dev
+
+            # Optional: export env variables or load .env.production
+            # export NODE_ENV=production
 
             pm2 restart knot-web || pm2 start "npx next start -p 4000" --name knot-web
           EOF
