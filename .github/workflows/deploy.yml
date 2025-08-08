@@ -53,18 +53,15 @@ jobs:
           scp -P $SSH_PORT -r .next public package.json next.config.mjs $SSH_USERNAME@$SSH_HOST:/var/www/website/
 
       - name: Restart app on server
-  run: |
-    ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << 'EOF'
-      cd /var/www/website
+        run: |
+          ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << 'EOF'
+          cd /var/www/website || exit 1
 
-      # Write .env.production file using GitHub Actions variable
-      echo "$ENV_FILE" > .env.production
+          echo "$ENV_FILE" > .env.production
 
-      # Reinstall prod dependencies (if needed)
-      npm install --production
+          npm ci --omit=dev
 
-      # Restart app with pm2
-      pm2 restart knot-web || pm2 start 'npx next start -p 4000' --name knot-web
-      exit
-    EOF
+          pm2 restart knot-web || pm2 start 'npx next start -p 4000' --name knot-web
 
+          exit
+          EOF
