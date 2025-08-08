@@ -86,7 +86,7 @@ export const reducer = (state, action) => {
       }
       return {
         ...state,
-        toasts: state.toasts.filter((t) => t.id !== action.toastId),
+        toasts: state.toasts?.filter((t) => t.id !== action.toastId),
       }
   }
 }

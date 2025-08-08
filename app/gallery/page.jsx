@@ -83,7 +83,7 @@ export default function GalleryPage() {
                     transition={{ duration: 0.6, delay: 0.2 }}
                     className="flex flex-wrap justify-center gap-4 mb-12"
                 >
-                    {categories.map((category) => (
+                    {categories?.map((category) => (
                         <motion.button
                             key={category}
                             whileHover={{ scale: 1.05 }}
