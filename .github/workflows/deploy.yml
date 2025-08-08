@@ -1,0 +1,59 @@
+name: Deploy Next.js App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.18.0
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build Next.js app
+        run: npm run build
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Clean remote folder
+        run: |
+          ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << EOF
+            sudo rm -rf /var/www/website/*
+            mkdir -p /var/www/website
+          EOF
+
+      - name: Upload build to server
+        run: |
+          scp -P $SSH_PORT -r .next public package.json next.config.* $SSH_USERNAME@$SSH_HOST:/var/www/website/
+          
+      - name: Install dependencies and restart server
+        run: |
+          ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << 'EOF'
+            cd /var/www/website
+            npm install --omit=dev
+
+            # Optional: export env variables or load .env.production
+            # export NODE_ENV=production
+
+            pm2 restart knot-web || pm2 start "npx next start -p 4000" --name knot-web
+          EOF
