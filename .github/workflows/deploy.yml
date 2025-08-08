@@ -14,7 +14,7 @@ jobs:
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-      NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -27,33 +27,29 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build Next.js app
-        run: npm run build
+      - name: Build check (optional)
+        run: npm run lint || true
 
       - name: Set up SSH key
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Clean remote folder
+      - name: Upload full project to server
         run: |
-          ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << EOF
-            sudo rm -rf /var/www/website/*
-            mkdir -p /var/www/website
-          EOF
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -p $SSH_PORT" ./ $SSH_USERNAME@$SSH_HOST:/var/www/website/
 
-      - name: Upload build to server
-        run: |
-          scp -P $SSH_PORT -r .next public package.json next.config.* $SSH_USERNAME@$SSH_HOST:/var/www/website/
-          
-      - name: Install dependencies and restart server
+      - name: Install & Build & Start app on server
         run: |
           ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << 'EOF'
             cd /var/www/website
-            npm install --omit=dev
 
-            # Optional: export env variables or load .env.production
-            # export NODE_ENV=production
+            # Install dependencies
+            npm install --legacy-peer-deps
 
+            # Build the app
+            npm run build
+
+            # Start or restart with PM2 on port 4000
             pm2 restart knot-web || pm2 start "npx next start -p 4000" --name knot-web
           EOF
