@@ -1,4 +1,4 @@
-name: Deploy Next.js App
+name: Deploy next app
 
 on:
   push:
@@ -20,20 +20,43 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.18.0
+
+      - name: Clean install dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install --force
+
+
+
+      - name: Build Next app
+        run: npm run build
+
       - name: Set up SSH key
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Upload full project to server
+      - name: Clean remote folder
         run: |
-          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -p $SSH_PORT" ./ $SSH_USERNAME@$SSH_HOST:/var/www/website/
+          ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << EOF
+            sudo rm -rf /var/www/website/*
+            mkdir -p /var/www/website
+            exit
+          EOF
 
-      - name: Install, Build, Start on Server
+      - name: Upload files to server
+        run: |
+          scp -P $SSH_PORT -r .next public package.json next.config.mjs $SSH_USERNAME@$SSH_HOST:/var/www/website/
+
+      - name: Restart app on server
         run: |
           ssh -o StrictHostKeyChecking=no -p $SSH_PORT $SSH_USERNAME@$SSH_HOST << 'EOF'
             cd /var/www/website
-            npm install --legacy-peer-deps
-            npm run build
-            pm2 restart knot-web || pm2 start "npm run start" --name knot-web
+            npm install --production
+            pm2 restart knot-web || pm2 start 'npx next start -p 5000' --name knot-web
+            exit
           EOF
