@@ -41,9 +41,9 @@ const SocialLinks = [
 ]
 
 const openingHours = [
-  { days: "Monday - Thursday:", hours: "8:00 PM - 2:00 AM" },
-  { days: "Friday - Saturday:", hours: "8:00 PM - 4:00 AM" },
-  { days: "Sunday:", hours: "8:00 PM - 1:00 AM" },
+  { days: "Mon - Wed : ", hours: "11:00 PM - 7:00 AM" },
+  { days: "Thu - Sun : ", hours: "11:00 PM - 7:00 AM" },
+  { days: "Tuesday : ", hours: "Closed" }
 ]
 
 export default function Footer() {
@@ -118,9 +118,9 @@ export default function Footer() {
             <h3 className="text-white text-lg font-bold mb-6">Opening Hours</h3>
             <ul className="space-y-3">
               {openingHours.map((schedule, index) => (
-                <li key={index} className="flex justify-between">
+                <li key={index} className="flex">
                   <span className="text-muted">{schedule.days}</span>
-                  <span className="text-white">{schedule.hours}</span>
+                  <span className="text-white ml-2"> {schedule.hours}</span>
                 </li>
               ))}
             </ul>
@@ -134,7 +134,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center max-w-7xl m-auto">
           <p className="text-white mb-4 md:mb-0">© 2025 <Link href="/">Knot Delhi</Link>. All rights reserved.</p>
           <p className="text-white">
-            Designed by <span className="text-gray-600 text-[10px]">Akash Babu</span>
+            Designed by <span className="text-gray-600">The Third Eye Production Pvt Ltd</span>
           </p>
         </div>
       </div>
